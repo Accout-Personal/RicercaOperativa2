@@ -5,3 +5,4 @@
 /datasetnfp/PDF/*
 /datasetJson/json/png/*
 *.pyc
+/__pycache__
