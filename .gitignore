@@ -4,3 +4,4 @@
 /resultsGPU2/*
 /datasetnfp/PDF/*
 /datasetJson/json/png/*
+*.pyc
