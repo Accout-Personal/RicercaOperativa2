@@ -1,6 +1,5 @@
 import json
 import os
-#import geometryUtil
 import copy
 import networkx as nx
 import csv
@@ -11,188 +10,7 @@ from NFPLibGPU import *
 from typing import Tuple
 import gc
 import networkit as nk
-MAX_NFP_VERTICES = 30
 
-@cuda.jit(device=True)
-def on_segment(Ax,Ay, Bx,By, p):
-    #p[0] => p['x'], p[1]=>p['y']
-    # vertical line
-    if almost_equal(Ax, Bx) and almost_equal(p[0], Ax):
-        if not almost_equal(p[1], By) and not almost_equal(p[1], Ay) and p[1] < max(By, Ay) and p[1] > min(By, Ay):
-            return True
-        else:
-            return False
-
-    # horizontal line
-    if almost_equal(Ay, By) and almost_equal(p[1], Ay):
-        if not almost_equal(p[0], Bx) and not almost_equal(p[0], Ax) and p[0] < max(Bx, Ax) and p[0] > min(Bx, Ax):
-            return True
-        else:
-            return False
-
-    # range check
-    if (p[0] < Ax and p[0] < Bx) or (p[0] > Ax and p[0] > Bx) or (p[1] < Ay and p[1] < By) or (p[1] > Ay and p[1] > By):
-        return False
-
-    # exclude end points
-    if (almost_equal(p[0], Ax) and almost_equal(p[1], Ay)) or (almost_equal(p[0], Bx) and almost_equal(p[1], By)):
-        return False
-
-    cross = (p[1] - Ay) * (Bx - Ax) - (p[0] - Ax) * (By - Ay)
-
-    if abs(cross) > 1e-9:
-        return False
-
-    dot = (p[0] - Ax) * (Bx - Ax) + (p[1] - Ay) * (By - Ay)
-
-    if dot < 0 or almost_equal(dot, 0):
-        return False
-
-    len2 = (Bx - Ax)**2 + (By - Ay)**2
-
-    if dot > len2 or almost_equal(dot, len2):
-        return False
-
-    return True
-
-@cuda.jit(device=True)
-def almost_equal(a, b):
-    return abs(a - b) < 1e-9
-
-
-@cuda.jit(device=True)
-def point_in_polygon(point, polygon,number_vertices):
-    
-    # return True if point is in the polygon, False if outside, and None if exactly on a point or edge
-    #False =>0, True =>1, None=>2
-    inside = 0
-
-    offsetx = 0
-    offsety = 0
-    #0 => x 1=>y
-    j = number_vertices - 1
-    for i in range(number_vertices):
-        xi = polygon[i][0] + offsetx
-        yi = polygon[i][1] + offsety
-        xj = polygon[j][0] + offsetx
-        yj = polygon[j][1] + offsety
-
-        if almost_equal(xi, point[0]) and almost_equal(yi, point[1]):
-            return 2  # no result
-        
-        if on_segment(xi, yi, xj, yj, point):
-            return 2  # exactly on the segment
-        
-        if almost_equal(xi, xj) and almost_equal(yi, yj):  # ignore very small lines
-            continue
-        
-        intersect = ((yi > point[1]) != (yj > point[1])) and (point[0] < (xj - xi) * (point[1] - yi) / (yj - yi) + xi)
-        if intersect:
-            #inside = not inside
-            if inside==0:
-                inside=1
-            else:
-                inside=0
-        
-        j = i
-    #print("point in polygon check")
-    #print(polygon)
-    #print(point)
-    #print(inside)
-    return inside
-
-@cuda.jit
-def compare_groups_kernel(points_a, points_b, 
-                         ab_nfp, ab_nfp_num_vertices,
-                         results_ab,reference_a):
-    """
-    Kernel to compare points between two groups using polygon interactions
-    Each thread handles one point from A against all points from B
-    """
-    # Block handles one point from A
-    point_a_idx = cuda.blockIdx.x
-    if point_a_idx >= points_a.shape[0]:
-        return
-    
-    
-    # Thread handles subset of points from B
-    thread_idx = cuda.threadIdx.x
-    # Shared memory for interaction polygons
-    shared_ab_nfp = cuda.shared.array(shape=(MAX_NFP_VERTICES,2), dtype=np.float32)
-    # Get our point from group A
-    point_a = points_a[point_a_idx]
-
-    #load polygon vertices and shifts with offset
-    if cuda.threadIdx.x == 0:  #thread 0 load shared memory        
-        for i in range(ab_nfp_num_vertices):
-            shared_ab_nfp[i,0] = ab_nfp[i,0] - reference_a[0] + point_a[0] #xoffset
-            shared_ab_nfp[i,1] = ab_nfp[i,1] - reference_a[1] + point_a[1] #yoffset
-    
-    cuda.syncthreads()
-    
-    # Each thread handles a portion of B points
-    points_per_thread = (points_b.shape[0] + cuda.blockDim.x - 1) // cuda.blockDim.x
-    start_idx = thread_idx * points_per_thread
-    end_idx = min(start_idx + points_per_thread, points_b.shape[0])
-
-    # Process our portion of B points and write results directly
-    for j in range(start_idx, end_idx):
-        point_b = points_b[j]
-        results_ab[point_a_idx, j,0] = point_a[2]
-        results_ab[point_a_idx, j,1] = point_b[2]
-        results_ab[point_a_idx, j,2] = point_in_polygon(point_b, shared_ab_nfp, ab_nfp_num_vertices)
-
-    
-def process_group_pair(group_a, group_b, ab_nfp, ba_nfp,ref_a,ref_b):
-
-    group_a = np.array(group_a, dtype=np.float32)
-    group_b = np.array(group_b, dtype=np.float32)
-    ab_nfp = np.array(ab_nfp, dtype=np.float32)
-    ba_nfp = np.array(ba_nfp, dtype=np.float32)
-    ref_a = np.array(ref_a, dtype=np.float32)
-    ref_b = np.array(ref_b, dtype=np.float32)
-
-    """Process a pair of groups in both directions"""
-    # Unpack interaction data
-    ab_nfp, ab_num_vertices = ab_nfp,ab_nfp.shape[0]
-    ba_nfp, ba_num_vertices = ba_nfp,ba_nfp.shape[0]
-    
-    # Prepare results arrays
-    results_ab = np.zeros((len(group_a), len(group_b), 3), dtype=np.int32)
-    results_ba = np.zeros((len(group_b), len(group_a), 3), dtype=np.int32)
-    
-    # Configure kernel
-    threadsperblock = 256
-    blockspergrid_ab = len(group_a)  # One block per point in A
-
-    d_points_a = cuda.to_device(group_a)
-    d_points_b = cuda.to_device(group_b)
-    d_ab_vertices = cuda.to_device(ab_nfp)
-    d_results_ab = cuda.to_device(results_ab)
-    #test_kernel[blockspergrid_ab, threadsperblock](d_points_a,d_points_b,d_ab_vertices,ab_num_vertices,d_results_ab,ref_a)
-
-    compare_groups_kernel[blockspergrid_ab, threadsperblock](
-        d_points_a, d_points_b,
-        d_ab_vertices, ab_num_vertices,
-        d_results_ab,ref_a
-    )
-    # Process B->A
-    blockspergrid_ba = len(group_b)  # One block per point in A
-    
-    d_ba_vertices = cuda.to_device(ba_nfp)
-    d_results_ba = cuda.to_device(results_ba)
-
-    compare_groups_kernel[blockspergrid_ba, threadsperblock](
-        d_points_b, d_points_a,  # Note: swapped order
-        d_ba_vertices, ba_num_vertices,
-        d_results_ba,ref_b
-    )
-    
-    # Get results
-    results_ab = d_results_ab.copy_to_host()
-    results_ba = d_results_ba.copy_to_host()
-    
-    return results_ab, results_ba
 
 def filteredges(point):
     return point[2] != 0
@@ -232,25 +50,24 @@ if __name__ == "__main__":
 
 
     #Dataset selected for graph generation
-    selelected = three
+    selelected = rco
     filepath = dir_path+selelected
 
     #Name of output
 
-    name = Path(filepath).stem
+    name = Path(filepath).stem+'1'
 
     #Output directory
     
     outputdir = dir_path+'/resultsGPU/'+name
     
     #Board Size
-    width = 7 #y axis
-    lenght = 7 #x axis
+    width = 15 #y axis
+    lenght = 8 #x axis
     PieceQuantity = 1 #None if use quantity from dataset
     freq = 1 #gx=gy=1
     with open(filepath) as file:
         inputdataset = json.load(file)
-    subJackobs = {}
     #
 
     
@@ -294,6 +111,7 @@ if __name__ == "__main__":
     LayerOfpoint = []
     valIndex = 1
     layer = 1
+    pointIndex = 0
     print("generating each layer of points..")
     for key, value in polygons.items():
         poly = key
@@ -312,6 +130,9 @@ if __name__ == "__main__":
                 res = geometryUtil.point_in_polygon(point,dictBoardPolyinnerFit)
                 if res != False:
                     innerpoint.append([point['x'],point['y'],point['id']])
+                for i in range(len(innerpoint)):
+                    innerpoint[i][2] = i+pointIndex
+            pointIndex += len(innerpoint)
             #innerpoint = np.array(innerpoint,dtype='float64')
             #print("there is a",len(innerpoint)," of innerfit points! ")
             LayerOfpoint.append({"POLYGON":key,"InnerFitPoints":innerpoint,"Layer":layer})
