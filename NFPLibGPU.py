@@ -8,57 +8,6 @@ from datetime import datetime
 import copy
 import geometryUtil, os ,json
 import numpy as np
-###MULTITHREADING###
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename=f'processing_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
-)
-
-#def process_item(item):
-#    """Example processing function - replace with your actual processing logic"""
-#    try:
-#        time.sleep(0.1)  # Simulate some work
-#        return f"Processed {item}"
-#    except Exception as e:
-#        logging.error(f"Error processing item {item}: {str(e)}")
-#        return None
-
-def MakePointGraph_process_pool(listOfPoints,LayerOfpoint,MainLayer,polygons,dictBoardPoly, max_workers=None, chunk_size=1000):
-    """
-    Process items using ProcessPoolExecutor
-    Good for CPU bound tasks (e.g., heavy computations, data processing)
-    """
-    if max_workers is None:
-        max_workers = multiprocessing.cpu_count()
-    
-    results = []
-    errors = []
-    
-    logging.info(f"Starting process pool processing with {max_workers} workers")
-    
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks and process them with progress bar
-        futures = []
-        for point in listOfPoints:
-            future = executor.submit(MakePointGraph, point,MainLayer,LayerOfpoint,polygons,dictBoardPoly)
-            futures.append(future)
-        
-        # Process results as they complete
-        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Processing"):
-            try:
-                result = future.result()
-                if result is not None:
-                    results.append(result)
-            except Exception as e:
-                errors.append(str(e))
-                logging.error(f"Task failed: {str(e)}")
-    
-    logging.info(f"Processing completed. Successfully processed: {len(results)}, Errors: {len(errors)}")
-    return results, errors
-
-###END MULTITHREADING###
 
 def MakePointGraph(point,mainLayer,LayerOfpoint,polygons):
     #LayerGraph = {}

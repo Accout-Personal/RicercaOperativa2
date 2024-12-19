@@ -15,7 +15,10 @@ import networkit as nk
 import pandas as pd
 import time
 
+#GPU Settings#
+#Shared memory, made at compile time.
 MAX_NFP_VERTICES = 30
+BATCH_SIZES = 200
 
 def remove_symmetric_duplicates_gpu(arr_cpu):
     """
@@ -235,7 +238,7 @@ def compare_groups_kernel(all_points_a, all_points_b,
 
 
     
-def process_group_pairs(all_pairs,groups,group_poly_ids,nfps,nfp_sizes, references,batch_size=200):
+def process_group_pairs(all_pairs,groups,group_poly_ids,nfps,nfp_sizes, references,batch_size=BATCH_SIZES):
 
     """
     Process multiple pairs in batches
@@ -476,22 +479,20 @@ if __name__ == "__main__":
     }
 
     #Dataset selected for graph generation
-    selelected = blaz
+    selelected = poly1a
     filepath = dir_path+selelected
 
     #Name of output
-
-    name = Path(filepath).stem+'5_10'
-    name = 'BLAZEWICZ5'
+    name = Path(filepath).stem+'5'
     #Output directory
-    
     outputdir = dir_path+'/resultsGPU2/'+name
     
     #Board Size
-    width = 15 #y axis
-    lenght = 36 #x axis
+    width = 40 #y axis
+    lenght = 18 #x axis
+    #GPU Settings:
     
-    PieceQuantity = 5 #None if use quantity from dataset
+    PieceQuantity = 1 #None if use quantity from dataset
     #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
     #    'PIECE 1':9,
     #    'PIECE 2':7,
@@ -506,6 +507,8 @@ if __name__ == "__main__":
     #    'PIECE 4':9
     #}
     
+
+
     freq = 1 #gx=gy=1
     with open(filepath) as file:
         inputdataset = json.load(file)
