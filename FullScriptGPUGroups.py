@@ -386,6 +386,7 @@ if __name__ == "__main__":
     poly1e = "/datasetJson/json/poly1e.json"
     three = "/datasetJson/json/three.json"
     rco = "/datasetJson/json/rco.json"
+    artif = "/datasetJson/json/artif.json"
     #dataset struct:
     #{
     #   "name_polygon":{
@@ -475,24 +476,115 @@ if __name__ == "__main__":
         'PIECE 5':10,
         'PIECE 6':10,
         'PIECE 7':10,
-        'PIECE 8':10,
+        'PIECE 8':10
     }
 
+    artif1_2 = {
+        'piece 1':1,
+        'piece 2':1,
+        'piece 3':1,
+        'piece 4':2,
+        'piece 5':2,
+        'piece 6':2,
+        'piece 7':2,
+        'piece 8':2
+    }
+
+    artif2_4 = {
+        'piece 1':2,
+        'piece 2':2,
+        'piece 3':2,
+        'piece 4':4,
+        'piece 5':4,
+        'piece 6':4,
+        'piece 7':4,
+        'piece 8':4
+    }
+
+    artif3_6 = {
+        'piece 1':3,
+        'piece 2':3,
+        'piece 3':3,
+        'piece 4':6,
+        'piece 5':6,
+        'piece 6':6,
+        'piece 7':6,
+        'piece 8':6
+    }
+
+    artif4_8 = {
+        'piece 1':4,
+        'piece 2':4,
+        'piece 3':4,
+        'piece 4':8,
+        'piece 5':8,
+        'piece 6':8,
+        'piece 7':8,
+        'piece 8':8
+    }
+
+    artif5_10 = {
+        'piece 1':5,
+        'piece 2':5,
+        'piece 3':5,
+        'piece 4':10,
+        'piece 5':10,
+        'piece 6':10,
+        'piece 7':10,
+        'piece 8':10
+    }
+
+    artif6_12 = {
+        'piece 1':6,
+        'piece 2':6,
+        'piece 3':6,
+        'piece 4':12,
+        'piece 5':12,
+        'piece 6':12,
+        'piece 7':12,
+        'piece 8':12
+    }
+
+    artif7_14 = {
+        'piece 1':7,
+        'piece 2':7,
+        'piece 3':7,
+        'piece 4':14,
+        'piece 5':14,
+        'piece 6':14,
+        'piece 7':14,
+        'piece 8':14
+    }
+
+    artif8_15 = {
+        'piece 1':8,
+        'piece 2':8,
+        'piece 3':8,
+        'piece 4':15,
+        'piece 5':15,
+        'piece 6':15,
+        'piece 7':15,
+        'piece 8':15
+    }
+
+
+
+
     #Dataset selected for graph generation
-    selelected = poly1a
+    selelected = artif
     filepath = dir_path+selelected
 
     #Name of output
-    name = Path(filepath).stem+'5'
+    name = Path(filepath).stem+''
     #Output directory
     outputdir = dir_path+'/resultsGPU2/'+name
     
     #Board Size
-    width = 40 #y axis
-    lenght = 18 #x axis
+    width = 27 #y axis
+    lenght = 53 #x axis
     #GPU Settings:
     
-    PieceQuantity = 1 #None if use quantity from dataset
+    PieceQuantity = artif8_15 #None if use quantity from dataset
     #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
     #    'PIECE 1':9,
     #    'PIECE 2':7,
@@ -621,15 +713,17 @@ if __name__ == "__main__":
     print("Generating complete graph..")
     for mainLayer in LayerOfpoint:
         #make complete graph
-        print("generating graph of Layer: ",mainLayer["Layer"])
+        #print("generating graph of Layer: ",mainLayer["Layer"])
         newArr = makeFullGraph(mainLayer["InnerFitPoints"])
         EdgeArray.append(newArr)
 
     EdgeArray = np.vstack(EdgeArray)
-    print("adding results to the graph..")
-    ntXgraphAll.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
-    ntXgraphComplete.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
-    print("adding complete!")
+    NumberOfNodes = np.uint64(np.max(EdgeArray) + 1)
+    Clique_edges = EdgeArray.shape[0]
+    #print("adding results to the graph..")
+    #ntXgraphAll.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
+    #ntXgraphComplete.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
+    #print("adding complete!")
 
     num_groups = len(LayerOfpoint)
     # Create pairs to process (excluding self-pairs)
@@ -650,38 +744,40 @@ if __name__ == "__main__":
         nfpPair[(i,j)] = np.array(listpoint,dtype=np.float32)
         nfpPairSize[(i,j)] = nfpPair[(i,j)].shape[0]
     print("Generating NFP-graph..")
+    start = time.time()
     results = process_group_pairs(all_pairs,LayerOfpoint,layer_poly_ids,nfpPair,nfpPairSize,references)
-    print("NFP-graph generation complete!")
+    nfp_gpu = time.time() - start
+    print("NFP-graph generation complete with:", nfp_gpu, " seconds")
     print("filtering the duplicates..")
     progress_dict = {}
     total_results = []
+    start = time.time()
     for k in all_pairs:
         if (k[1],k[0]) in progress_dict.keys() or (k[0],k[1]) in progress_dict.keys():
             continue
-        result_pair = np.concatenate([results[(k[0],k[1])],results[(k[1],k[0])]])
+        result_pair = np.vstack([results[(k[0],k[1])],results[(k[1],k[0])]])
         del results[(k[0],k[1])]
         del results[(k[1],k[0])]
-        
-        if result_pair.shape[0] > 1_000_000:
-            total_results.append(remove_symmetric_duplicates_gpu(result_pair))
-        else:
-            total_results.append(remove_symmetric_duplicates_cpu(result_pair))
-        
+        total_results.append(remove_symmetric_duplicates_gpu(result_pair))
         progress_dict[(k[1],k[0])] = 1
         progress_dict[(k[0],k[1])] = 1
-        gc.collect()
+    filter_time = time.time() - start
+    print("filer time: ",filter_time)
     del results
     del progress_dict
     total_results = np.concatenate(total_results)
     print("result shape: ",total_results.shape)
-    
-    
+    nfp_edges = total_results.shape[0]
 
-    print("adding into graph..")
-    ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
-    ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
-
-    print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+    total_edges = np.uint64(nfp_edges+Clique_edges)
+    density = total_edges / (NumberOfNodes*(NumberOfNodes-1) / 2)
+    print("graph node:",NumberOfNodes,"edges: ",total_edges,"cliques edges: ",Clique_edges,"NFP-edges: ",nfp_edges,"density:",density)
+    #exit()
+    #print("adding into graph..")
+    #ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
+    #ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
+#
+    #print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
 
     print("writting into file ...")
 
@@ -689,8 +785,8 @@ if __name__ == "__main__":
     final_results = np.concatenate([total_results,EdgeArray])
     start = time.time()
     pd.DataFrame(final_results).to_csv(outputdir+'/graph '+name+'.csv', index=False, header=False)
-    parallel_time = time.time() - start
-    print("writting file time: ",parallel_time)
+    filwrite_time = time.time() - start
+    print("writting file time: ",filwrite_time)
     
     with open(outputdir+'/pointCoordinate '+name+'.txt', 'w') as file:
         file.write('##format: (Layer,x,y,id)' + '\n')
