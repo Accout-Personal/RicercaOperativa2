@@ -15,6 +15,40 @@ import networkit as nk
 import pandas as pd
 import time
 
+
+import openpyxl
+
+def update_or_add_with_openpyxl(filename, name, value):
+    """Minimal update or add row using openpyxl with 2 decimal formatting"""
+    
+    wb = openpyxl.load_workbook(filename)
+    ws = wb.active
+    
+    # Look for existing name in column 1
+    found_row = None
+    for row in range(1, ws.max_row + 1):
+        cell_value = ws.cell(row=row, column=1).value
+        if cell_value and str(cell_value).lower() == str(name).lower():
+            found_row = row
+            break
+    
+    if found_row:
+        # Update existing value in column 2
+        target_row = found_row
+        print(f"Updated {name}: {value}")
+    else:
+        # Add new row
+        target_row = ws.max_row + 1
+        ws.cell(row=target_row, column=3, value=name)
+        print(f"Added {name}: {value}")
+    
+    # Write value
+    value_cell = ws.cell(row=target_row, column=3, value=value)
+    if isinstance(value, float):
+        value_cell.number_format = '0.00'
+    
+    wb.save(filename)
+
 MAX_NFP_VERTICES = 30
 
 def remove_symmetric_duplicates_gpu(arr_cpu):
@@ -400,50 +434,50 @@ if __name__ == "__main__":
     ##J
 
     Jackobs1 = {
-        "J1_10_10_0":{"set":[1,5, 9, 12,15,16,17,20,21,23],"board":(10,20)},
-        "J1_10_10_1":{"set":[1,3, 4, 5, 8, 9, 10,13,14,25],"board":(10,19)},
-        "J1_10_10_2":{"set":[9,12,13,15,16,17,20,5, 2, 21],"board":(10,21)},
-        "J1_10_10_3":{"set":[9,14,20,25,17,24,8, 22,6, 4],"board":(10,23)},
-        "J1_10_10_4":{"set":[1,2, 3, 16,17,9, 22,10,8, 25],"board":(10,15)},
+        "J1-10-10-0":{"set":[1,5, 9, 12,15,16,17,20,21,23],"board":(10,20)},
+        "J1-10-10-1":{"set":[1,3, 4, 5, 8, 9, 10,13,14,25],"board":(10,19)},
+        "J1-10-10-2":{"set":[9,12,13,15,16,17,20,5, 2, 21],"board":(10,21)},
+        "J1-10-10-3":{"set":[9,14,20,25,17,24,8, 22,6, 4],"board":(10,23)},
+        "J1-10-10-4":{"set":[1,2, 3, 16,17,9, 22,10,8, 25],"board":(10,15)},
 
-        "J1_12_20_0":{"set":[9,12,16,17,1,22,8,21,15,13,23,5],"board":(20,12)},
-        "J1_12_20_1":{"set":[9,12,16,17,1,3,4,14,15,10,5,25],"board":(20,11)},
-        "J1_12_20_2":{"set":[9,16,17,13,14,20,22,21,24,2,4,8],"board":(20,14)},
-        "J1_12_20_3":{"set":[1,2,3,16,17,25,6,20,22,10,8,7],"board":(20,10)},
-        "J1_12_20_4":{"set":[24,6,16,3,9,7,15,17,23,13,21,1],"board":(20,16)},
+        "J1-12-20-0":{"set":[9,12,16,17,1,22,8,21,15,13,23,5],"board":(20,12)},
+        "J1-12-20-1":{"set":[9,12,16,17,1,3,4,14,15,10,5,25],"board":(20,11)},
+        "J1-12-20-2":{"set":[9,16,17,13,14,20,22,21,24,2,4,8],"board":(20,14)},
+        "J1-12-20-3":{"set":[1,2,3,16,17,25,6,20,22,10,8,7],"board":(20,10)},
+        "J1-12-20-4":{"set":[24,6,16,3,9,7,15,17,23,13,21,1],"board":(20,16)},
 
-        "J1_14_20_0":{"set":[9,17,22,23,5,3,21,1,16,10,8,15,12,13],"board":(20,14)},
-        "J1_14_20_1":{"set":[14,20,4,2,3,9,15,10,25,5,12,17,16,1],"board":(20,14)},
-        "J1_14_20_2":{"set":[2,24,13,6,21,14,8,25,20,16,9,4,17,10],"board":(20,16)},
-        "J1_14_20_3":{"set":[15,13,1,2,17,23,3,8,19,22,16,21,7,10],"board":(20,12)},
-        "J1_14_20_4":{"set":[24,6,25,3,11,15,4,9,10,16,13,12,17,21],"board":(20,16)},
+        "J1-14-20-0":{"set":[9,17,22,23,5,3,21,1,16,10,8,15,12,13],"board":(20,14)},
+        "J1-14-20-1":{"set":[14,20,4,2,3,9,15,10,25,5,12,17,16,1],"board":(20,14)},
+        "J1-14-20-2":{"set":[2,24,13,6,21,14,8,25,20,16,9,4,17,10],"board":(20,16)},
+        "J1-14-20-3":{"set":[15,13,1,2,17,23,3,8,19,22,16,21,7,10],"board":(20,12)},
+        "J1-14-20-4":{"set":[24,6,25,3,11,15,4,9,10,16,13,12,17,21],"board":(20,16)},
 
     }
 
     Jackobs2 = {
-        "J2_10_35_0":{"set":[23,20,19,1,12,5,21,9,15,18],"board":(35,28)},
-        "J2_10_35_1":{"set":[25,13,8,10,4,1,3,12,5,14],"board":(35,28)},
-        "J2_10_35_2":{"set":[13,17,12,20,16,5,19,15,9,2],"board":(35,27)},
-        "J2_10_35_3":{"set":[25,20,8,24,22,21,12,4,6,10],"board":(35,25)},
-        "J2_10_35_4":{"set":[25,20,1,16,8,17,7,2,10,3],"board":(35,22)},
+        "J2-10-35-0":{"set":[23,20,19,1,12,5,21,9,15,18],"board":(35,28)},
+        "J2-10-35-1":{"set":[25,13,8,10,4,1,3,12,5,14],"board":(35,28)},
+        "J2-10-35-2":{"set":[13,17,12,20,16,5,19,15,9,2],"board":(35,27)},
+        "J2-10-35-3":{"set":[25,20,8,24,22,21,12,4,6,10],"board":(35,25)},
+        "J2-10-35-4":{"set":[25,20,1,16,8,17,7,2,10,3],"board":(35,22)},
 
-        "J2_12_35_0":{"set":[13,1,9,12,15,5,19,21,20,23,8,18],"board":(35,31)},
-        "J2_12_35_1":{"set":[1,25,16,12,5,10,9,17,3,15,4,14],"board":(35,29)},
-        "J2_12_35_2":{"set":[12,13,10,20,16,4,19,24,2,8,21,22],"board":(35,30)},
-        "J2_12_35_3":{"set":[2,20,7,6,1,3,16,22,10,8,17,25],"board":(35,25)},
-        "J2_12_35_4":{"set":[24,23,6,13,12,15,7,18,1,19,21,3],"board":(35,29)},
+        "J2-12-35-0":{"set":[13,1,9,12,15,5,19,21,20,23,8,18],"board":(35,31)},
+        "J2-12-35-1":{"set":[1,25,16,12,5,10,9,17,3,15,4,14],"board":(35,29)},
+        "J2-12-35-2":{"set":[12,13,10,20,16,4,19,24,2,8,21,22],"board":(35,30)},
+        "J2-12-35-3":{"set":[2,20,7,6,1,3,16,22,10,8,17,25],"board":(35,25)},
+        "J2-12-35-4":{"set":[24,23,6,13,12,15,7,18,1,19,21,3],"board":(35,29)},
 
-        "J2_14_35_0":{"set":[13,18,15,12,8,21,10,9,1,20,23,5,3,19],"board":(35,34)},
-        "J2_14_35_1":{"set":[10,5,1,4,16,17,3,15,14,9,20,12,25,2],"board":(35,33)},
-        "J2_14_35_2":{"set":[10,13,16,4,14,12,20,25,19,22,8,21,24,6],"board":(35,33)},
-        "J2_14_35_3":{"set":[18,15,10,2,19,1,8,3,17,13,23,20,7,21],"board":(35,29)},
-        "J2_14_35_4":{"set":[13,6,3,16,19,11,12,15,9,21,10,25,24,4],"board":(35,31)},
+        "J2-14-35-0":{"set":[13,18,15,12,8,21,10,9,1,20,23,5,3,19],"board":(35,34)},
+        "J2-14-35-1":{"set":[10,5,1,4,16,17,3,15,14,9,20,12,25,2],"board":(35,33)},
+        "J2-14-35-2":{"set":[10,13,16,4,14,12,20,25,19,22,8,21,24,6],"board":(35,33)},
+        "J2-14-35-3":{"set":[18,15,10,2,19,1,8,3,17,13,23,20,7,21],"board":(35,29)},
+        "J2-14-35-4":{"set":[13,6,3,16,19,11,12,15,9,21,10,25,24,4],"board":(35,31)},
     }
 
 
     #Dataset selected for graph generation
-    selelected = jakobs2
-    selectSet = Jackobs2
+    selelected = jakobs1
+    selectSet = Jackobs1
     filepath = dir_path+selelected
     with open(filepath) as file:
             inputdataset = json.load(file)
@@ -452,11 +486,12 @@ if __name__ == "__main__":
     metaResults = []
     for key,value in selectSet.items():
 
+        proc_start = time.perf_counter()
         #Name of output
         name = key
 
         #Output directory
-        outputdir = dir_path+'/resultsGPU2/'+name
+        outputdir = dir_path+'/resultsGPU3/'+name
 
         #Board Size
         width = value['board'][0] #y axis
@@ -484,6 +519,7 @@ if __name__ == "__main__":
 
 
         total = 0
+        total_area = 0
         if PieceQuantity is not None:
             if isinstance(PieceQuantity, dict):
                 for key, value in PieceQuantity.items():
@@ -561,11 +597,15 @@ if __name__ == "__main__":
         ntXgraphInterLayer = nk.Graph()
         ntXgraphComplete = nk.Graph()
         EdgeArray = []
+        EdgeIndex = []
 
         print("Generating complete graph..")
         for mainLayer in LayerOfpoint:
             #make complete graph
             print("generating graph of Layer: ",mainLayer["Layer"])
+            points_values = np.array([point[2] for point in mainLayer["InnerFitPoints"]], dtype=int)
+            EdgeIndex.append([points_values.min(),points_values.max()])
+
             newArr = makeFullGraph(mainLayer["InnerFitPoints"])
             EdgeArray.append(newArr)
 
@@ -624,18 +664,28 @@ if __name__ == "__main__":
         print("adding into graph..")
         ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
         ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
-
+    
         print("widht x lenght: ",width," ",lenght,"nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+        proc_end = time.perf_counter()
+        proc_time = proc_end-proc_start
 
+
+        print("write into file ...")
+        update_or_add_with_openpyxl(dir_path+"/results_stat.xlsx",name,proc_time)
+        continue
         print("writting into file ...")
+        
+        
 
         print("saving into csv")
         final_results = np.concatenate([total_results,EdgeArray])
         start = time.time()
-        pd.DataFrame(final_results).to_csv(outputdir+'/graph '+name+'.csv', index=False, header=False)
+        #pd.DataFrame(final_results).to_csv(outputdir+'/graph '+name+'.csv', index=False, header=False,sep='\t')
         parallel_time = time.time() - start
         print("writting file time: ",parallel_time)
-
+        
+        
+        
         with open(outputdir+'/pointCoordinate '+name+'.txt', 'w') as file:
             file.write('##format: (Layer,x,y,id)' + '\n')
             for layer in LayerOfpoint:
@@ -647,6 +697,7 @@ if __name__ == "__main__":
             for layer in LayerPoly:
                 file.write(str(layer[0])+'\t'+str(layer[1])+'\n')
 
+        pd.DataFrame(EdgeIndex,columns=['start_index','end_index']).to_csv(outputdir+'/cliques'+name+'.csv', index=False, header=True,sep='\t')
         #start = time.time()
         #with open(outputdir+'/graph '+name+'.csv', 'w', newline='') as csvfile:
         #    spamwriter = csv.writer(csvfile, delimiter='\t',
@@ -663,7 +714,8 @@ if __name__ == "__main__":
             spamwriter.writerow(["Name :",str(name)])
             spamwriter.writerow(["Total Pieces :",total])
             spamwriter.writerow(["Type of Pieces :",len(polygons)])
-            spamwriter.writerow(["Board lenght x lenght:", str(width)+' '+ str(lenght)])
+            spamwriter.writerow(["Board width",str(width)])
+            spamwriter.writerow(["Board length:",str(lenght)])
             spamwriter.writerow(["Number of Nodes:",ntXgraphAll.numberOfNodes()])
             spamwriter.writerow(["Number of Edges:",ntXgraphAll.numberOfEdges()])
             spamwriter.writerow(["Number of Clique Edges:",ntXgraphComplete.numberOfEdges()])

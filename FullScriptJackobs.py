@@ -6,6 +6,41 @@ import networkx as nx
 import csv
 from pathlib import Path
 from NFPLib import *
+import time
+import openpyxl
+
+def update_or_add_with_openpyxl(filename, name, value):
+    """Minimal update or add row using openpyxl with 2 decimal formatting"""
+    
+    wb = openpyxl.load_workbook(filename)
+    ws = wb.active
+    
+    # Look for existing name in column 1
+    found_row = None
+    for row in range(1, ws.max_row + 1):
+        cell_value = ws.cell(row=row, column=1).value
+        if cell_value and str(cell_value).lower() == str(name).lower():
+            found_row = row
+            break
+    
+    if found_row:
+        # Update existing value in column 2
+        target_row = found_row
+        print(f"Updated {name}: {value}")
+    else:
+        # Add new row
+        target_row = ws.max_row + 1
+        ws.cell(row=target_row, column=1, value=name)
+        print(f"Added {name}: {value}")
+    
+    # Write value
+    value_cell = ws.cell(row=target_row, column=2, value=value)
+    if isinstance(value, float):
+        value_cell.number_format = '0.00'
+    
+    wb.save(filename)
+
+
 if __name__ == "__main__":
     
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -62,14 +97,17 @@ if __name__ == "__main__":
     }
 
     #Dataset selected for graph generation
-    selelected = jakobs1
+    
+
+    selelected = jakobs2
+    selectSet = Jackobs2
     filepath = dir_path+selelected
     with open(filepath) as file:
             inputdataset = json.load(file)
 
     metaResults = []
-    for key,value in Jackobs2.items():
-        
+    for key,value in selectSet.items():
+        proc_start = time.perf_counter()
         #Name of output
         name = key
 
@@ -81,26 +119,13 @@ if __name__ == "__main__":
         width = value['board'][0] #y axis
         lenght = value['board'][1] #x axis
         PieceQuantity = 1 #None if use quantity from dataset
-        
+        freq = 1 #gx=gy=1
+
         subJackobs = {}
         for poly in value['set']:
             subJackobs[str(poly)] = inputdataset[str(poly)]
-        #
-
 
         polygons = run_js_script_function('file://'+dir_path.replace('\\','/')+'/scriptpy.js', 'calcNFP_INFP', [subJackobs, lenght,width])
-
-        #nfp-infit output struct:
-        #{
-        #   "name_polygon":{
-        #       "VERTICES":[list_of_vertices],
-        #       "QUANTITY":quantity,
-        #       "NUMBER OF VERTICES": number,
-        #       "innerfit":[polygon_innerfit],
-        #       "nfps":[{"POLYGON": "name_polygon","VERTICES":[list_of_vertices_nfp]}]}
-        #
-        #}
-        #NOTE: There is also a 'rect' polygon added at the end of the file as the board
 
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
@@ -122,8 +147,7 @@ if __name__ == "__main__":
                 #polygons[key]['QUANTITY'] = PieceQuantity
                 total += polygons[key]['QUANTITY']
 
-        freq = 1 #gx=gy=1
-
+    
         LayerPoly = []
         LayerOfpoint = []
         valIndex = 1
@@ -211,24 +235,31 @@ if __name__ == "__main__":
                 "NFP-Edges:":ntXgraphInterLayer.number_of_edges()
             })
         
+        proc_end = time.perf_counter()
+        proc_time = proc_end-proc_start
 
-        with open(outputdir+'/metadata'+name+'.csv', 'w', newline='') as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter='\t',
-                                    quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow(["Name :",str(name)])
-            spamwriter.writerow(["Total Pieces :",total])
-            spamwriter.writerow(["Type of Pieces :",len(polygons)])
-            spamwriter.writerow(["Board lenght x lenght:", str(width)+' '+ str(lenght)])
-            spamwriter.writerow(["Number of Nodes:",ntXgraphAll.number_of_nodes()])
-            spamwriter.writerow(["Number of Edges:",ntXgraphAll.number_of_edges()])
-            spamwriter.writerow(["Number of Clique Edges:",ntXgraphComplete.number_of_edges()])
-            spamwriter.writerow(["Intra Layer Edges:",ntXgraphInterLayer.number_of_edges()])
 
-    for r in metaResults:
-        strs = ''
-        for k,v in r.items():
-           strs = strs+str(k)+' '+str(v)+' '
-        print(strs)
+        print("write into file ...")
+        update_or_add_with_openpyxl(dir_path+"/results_stat.xlsx",name,proc_time)
+
+        #with open(outputdir+'/metadata'+name+'.csv', 'w', newline='') as csvfile:
+        #    spamwriter = csv.writer(csvfile, delimiter='\t',
+        #                            quoting=csv.QUOTE_MINIMAL)
+        #    spamwriter.writerow(["Name :",str(name)])
+        #    spamwriter.writerow(["Total Pieces :",total])
+        #    spamwriter.writerow(["Type of Pieces :",len(polygons)])
+        #    spamwriter.writerow(["Board width",str(width)])
+        #    spamwriter.writerow(["Board length:",str(lenght)])
+        #    spamwriter.writerow(["Number of Nodes:",ntXgraphAll.number_of_nodes()])
+        #    spamwriter.writerow(["Number of Edges:",ntXgraphAll.number_of_edges()])
+        #    spamwriter.writerow(["Number of Clique Edges:",ntXgraphComplete.number_of_edges()])
+        #    spamwriter.writerow(["Intra Layer Edges:",ntXgraphInterLayer.number_of_edges()])
+
+    #for r in metaResults:
+    #    strs = ''
+    #    for k,v in r.items():
+    #       strs = strs+str(k)+' '+str(v)+' '
+    #    print(strs)
     
-    import code
-    code.interact(local=locals())
+    #import code
+    #code.interact(local=locals())

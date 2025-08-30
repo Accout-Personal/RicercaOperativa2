@@ -29,7 +29,6 @@ def remove_symmetric_duplicates_gpu(arr_cpu):
     Returns:
         numpy array with one of each symmetric pair removed
     """
-    # Transfer data to GPU
     arr = cp.asarray(arr_cpu)
     
     # Create a canonical form where first element is always smaller
@@ -52,7 +51,6 @@ def remove_symmetric_duplicates_gpu(arr_cpu):
     indices = cp.sort(indices)
     result_gpu = arr[indices]
     
-    # Transfer back to CPU
     return cp.asnumpy(result_gpu)
 
 def remove_symmetric_duplicates_cpu(arr):
@@ -181,16 +179,13 @@ def compare_groups_kernel(all_points_a, all_points_b,
     #Pair ID
     pair_idx = cuda.blockIdx.y
 
-    #print(f"Block ({cuda.blockIdx.x}, {cuda.blockIdx.y}) starting")  # Add this BEFORE first check
-
     if pair_idx >= num_pairs_in_batch:
-    #    print(f"Block ({cuda.blockIdx.x}, {cuda.blockIdx.y}) rejected: pair_idx {pair_idx} >= {num_pairs_in_batch}")
-        return
-    
+
+        return 
     #Block ID
     point_idx = cuda.blockIdx.x
     if point_idx >= pair_sizes_a[pair_idx]:
-    #    print(f"Block ({cuda.blockIdx.x}, {cuda.blockIdx.y}) rejected: point_idx {point_idx} >= {pair_sizes_a[pair_idx]}")
+
         return
     
     # Get reference for this pair (based on group A)
@@ -214,6 +209,7 @@ def compare_groups_kernel(all_points_a, all_points_b,
     
     b_offset = pair_offsets_b[pair_idx]
     points_b_size = pair_sizes_b[pair_idx]
+
     # Get base offset for this pair's results
     pair_base = pair_result_offsets[pair_idx]
 
@@ -362,6 +358,28 @@ def process_group_pairs(all_pairs,groups,group_poly_ids,nfps,nfp_sizes, referenc
 
     return results_dict
 
+
+def polygon_area(polygon):
+    """
+    Calculate the area of a polygon, assuming no self-intersections.
+    A negative area indicates counter-clockwise winding direction.
+    
+    Args:
+        polygon: List of points, where each point is a dict with 'x' and 'y' keys
+    
+    Returns:
+        float: Area of the polygon
+    """
+    area = 0
+    j = len(polygon) - 1  # Start j at the last vertex
+    
+    for i in range(len(polygon)):
+        area += (polygon[j]['x'] + polygon[i]['x']) * (polygon[j]['y'] - polygon[i]['y'])
+        j = i  # j follows i
+    
+    return 0.5 * abs(area)
+
+
 if __name__ == "__main__":
     
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -397,6 +415,484 @@ if __name__ == "__main__":
     #}
     ##J
 
+
+    datasetThree = [
+        {
+            "dataset":three,
+            "outputName":"three",
+            "quantity":1,
+            "width":7,
+            "length":7            
+        },
+        {
+            "dataset":three,
+            "outputName":"threep2",
+            "quantity":2,
+            "width":7,
+            "length":11
+            
+        },
+        {
+            "dataset":three,
+            "outputName":"threep2w9",
+            "quantity":2,
+            "width":9,
+            "length":9
+            
+        },
+        {
+            "dataset":three,
+            "outputName":"threep3",
+            "quantity":3,
+            "width":7,
+            "length":16
+        },
+        {
+            "dataset":three,
+            "outputName":"threep3w9",
+            "quantity":3,
+            "width":9,
+            "length":13
+        }
+    ]
+
+    datasetshapes = [
+        {
+            "dataset":shapes,
+            "outputName":"shapes4-small",
+            "quantity":1,
+            "width":13,
+            "length":24            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes8",
+            "quantity":2,
+            "width":20,
+            "length":28            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes2",
+            "quantity":2,
+            "width":40,
+            "length":16            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes4",
+            "quantity":4,
+            "width":40,
+            "length":28            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes5",
+            "quantity":5,
+            "width":40,
+            "length":35            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes7",
+            "quantity":7,
+            "width":40,
+            "length":48            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes9",
+            "quantity":
+                {  
+                    'PIECE 1':9,
+                    'PIECE 2':7,
+                    'PIECE 3':9,
+                    'PIECE 4':9
+                },
+            "width":40,
+            "length":54            
+        },
+        {
+            "dataset":shapes,
+            "outputName":"shapes15",
+            "quantity":
+                {
+                    'PIECE 1':15,
+                    'PIECE 2':7,
+                    'PIECE 3':9,
+                    'PIECE 4':12
+                },
+            "width":40,
+            "length":67            
+        },
+    ]
+
+    datasetblaz = [
+        {
+            "dataset":blaz,
+            "outputName":"blasz2",
+            "quantity":{
+                'PIECE 1':5,
+                'PIECE 2':5,
+                'PIECE 3':5,
+                'PIECE 4':5,
+                'PIECE 5':0,
+                'PIECE 6':0,
+                'PIECE 7':0
+            },
+            "width":15,
+            "length":27
+        },
+        {
+            "dataset":blaz,
+            "outputName":"BLAZEWICZ1",
+            "quantity":1,
+            "width":15,
+            "length":8            
+        },
+        {
+            "dataset":blaz,
+            "outputName":"BLAZEWICZ2",
+            "quantity":2,
+            "width":15,
+            "length":16            
+        },
+        {
+            "dataset":blaz,
+            "outputName":"BLAZEWICZ3",
+            "quantity":3,
+            "width":15,
+            "length":22            
+        },
+        {
+            "dataset":blaz,
+            "outputName":"BLAZEWICZ4",
+            "quantity":4,
+            "width":15,
+            "length":29           
+        },
+        {
+            "dataset":blaz,
+            "outputName":"BLAZEWICZ5",
+            "quantity":5,
+            "width":15,
+            "length":36           
+        },
+    ]
+
+    datasetRCO = [
+        {
+            "dataset":rco,
+            "outputName":"RCO1",
+            "quantity":1,
+            "width":15,
+            "length":8           
+        },
+        {
+            "dataset":rco,
+            "outputName":"RCO2",
+            "quantity":2,
+            "width":15,
+            "length":17           
+        },
+        {
+            "dataset":rco,
+            "outputName":"RCO3",
+            "quantity":3,
+            "width":15,
+            "length":25           
+        },
+        {
+            "dataset":rco,
+            "outputName":"RCO4",
+            "quantity":4,
+            "width":15,
+            "length":29           
+        },
+        {
+            "dataset":rco,
+            "outputName":"RCO5",
+            "quantity":5,
+            "width":15,
+            "length":41           
+        },
+    ]
+
+    datasetArtif = [
+        {
+            "dataset":artif,
+            "outputName":"artif1_2",
+            "quantity":{
+                'piece 1':1,
+                'piece 2':1,
+                'piece 3':1,
+                'piece 4':2,
+                'piece 5':2,
+                'piece 6':2,
+                'piece 7':2,
+                'piece 8':2
+            },
+            "width":27,
+            "length":8           
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif2_4",
+            "quantity":{
+                'piece 1':2,
+                'piece 2':2,
+                'piece 3':2,
+                'piece 4':4,
+                'piece 5':4,
+                'piece 6':4,
+                'piece 7':4,
+                'piece 8':4
+            },
+            "width":27,
+            "length":14           
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif3_6",
+            "quantity":{
+                'piece 1':3,
+                'piece 2':3,
+                'piece 3':3,
+                'piece 4':6,
+                'piece 5':6,
+                'piece 6':6,
+                'piece 7':6,
+                'piece 8':6
+            },
+            "width":27,
+            "length":20           
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif4_8",
+            "quantity":{
+                'piece 1':4,
+                'piece 2':4,
+                'piece 3':4,
+                'piece 4':8,
+                'piece 5':8,
+                'piece 6':8,
+                'piece 7':8,
+                'piece 8':8
+            },
+            "width":27,
+            "length":28           
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif5_10",
+            "quantity":{
+                'piece 1':5,
+                'piece 2':5,
+                'piece 3':5,
+                'piece 4':10,
+                'piece 5':10,
+                'piece 6':10,
+                'piece 7':10,
+                'piece 8':10
+            },
+            "width":27,
+            "length":34
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif6_12",
+            "quantity":{
+                'piece 1':6,
+                'piece 2':6,
+                'piece 3':6,
+                'piece 4':12,
+                'piece 5':12,
+                'piece 6':12,
+                'piece 7':12,
+                'piece 8':12
+            },
+            "width":27,
+            "length":41
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif7_14",
+            "quantity":{
+                'piece 1':7,
+                'piece 2':7,
+                'piece 3':7,
+                'piece 4':14,
+                'piece 5':14,
+                'piece 6':14,
+                'piece 7':14,
+                'piece 8':14
+            },
+            "width":27,
+            "length":48
+        },
+        {
+            "dataset":artif,
+            "outputName":"artif",
+            "quantity":{
+                'piece 1':8,
+                'piece 2':8,
+                'piece 3':8,
+                'piece 4':15,
+                'piece 5':15,
+                'piece 6':15,
+                'piece 7':15,
+                'piece 8':15
+            },
+            "width":27,
+            "length":53
+        },
+    ]
+
+    datasetshirts = [
+        {
+            "dataset":shirts ,
+            "outputName":"shirts1_2",
+            "quantity":{
+                'PIECE 1':1,
+                'PIECE 2':1,
+                'PIECE 3':1,
+                'PIECE 4':2,
+                'PIECE 5':2,
+                'PIECE 6':2,
+                'PIECE 7':2,
+                'PIECE 8':2,
+            },
+            "width":40,
+            "length":13
+        },
+        {
+            "dataset":shirts ,
+            "outputName":"shirts2_4",
+            "quantity":{
+                'PIECE 1':2,
+                'PIECE 2':2,
+                'PIECE 3':2,
+                'PIECE 4':4,
+                'PIECE 5':4,
+                'PIECE 6':4,
+                'PIECE 7':4,
+                'PIECE 8':4,
+            },
+            "width":40,
+            "length":20
+        },
+        {
+            "dataset":shirts ,
+            "outputName":"shirts3_6",
+            "quantity":{
+                'PIECE 1':3,
+                'PIECE 2':3,
+                'PIECE 3':3,
+                'PIECE 4':6,
+                'PIECE 5':6,
+                'PIECE 6':6,
+                'PIECE 7':6,
+                'PIECE 8':6,
+            },
+            "width":40,
+            "length":26
+        },
+        {
+            "dataset":shirts ,
+            "outputName":"shirts4_8",
+            "quantity":{
+                'PIECE 1':4,
+                'PIECE 2':4,
+                'PIECE 3':4,
+                'PIECE 4':8,
+                'PIECE 5':8,
+                'PIECE 6':8,
+                'PIECE 7':8,
+                'PIECE 8':8,
+            },
+            "width":40,
+            "length":35
+        },
+        {
+            "dataset":shirts ,
+            "outputName":"shirts5_10",
+            "quantity":{
+                'PIECE 1':5,
+                'PIECE 2':5,
+                'PIECE 3':5,
+                'PIECE 4':10,
+                'PIECE 5':10,
+                'PIECE 6':10,
+                'PIECE 7':10,
+                'PIECE 8':10,
+            },
+            "width":40,
+            "length":42
+        },
+    ]
+
+    datasetdagli = [
+        {
+            "dataset":dagli,
+            "outputName":"dagli1",
+            "quantity":1,
+            "width":60,
+            "length":25           
+        },
+    ]
+
+    datasetfu = [
+        {
+            "dataset":fu5,
+            "outputName":"fu5",
+            "quantity":1,
+            "width":38,
+            "length":18           
+        },
+        {
+            "dataset":fu6,
+            "outputName":"fu6",
+            "quantity":1,
+            "width":38,
+            "length":24           
+        },
+        {
+            "dataset":fu7,
+            "outputName":"fu7",
+            "quantity":1,
+            "width":38,
+            "length":24           
+        },
+        {
+            "dataset":fu8,
+            "outputName":"fu8",
+            "quantity":1,
+            "width":38,
+            "length":24           
+        },
+        {
+            "dataset":fu9,
+            "outputName":"fu9",
+            "quantity":1,
+            "width":38,
+            "length":29           
+        },
+        {
+            "dataset":fu10,
+            "outputName":"fu10",
+            "quantity":1,
+            "width":38,
+            "length":34           
+        },
+        {
+            "dataset":fu,
+            "outputName":"fu",
+            "quantity":1,
+            "width":38,
+            "length":38           
+        },
+    ]
 
 
 
@@ -479,348 +975,346 @@ if __name__ == "__main__":
         'PIECE 8':10
     }
 
-    artif1_2 = {
-        'piece 1':1,
-        'piece 2':1,
-        'piece 3':1,
-        'piece 4':2,
-        'piece 5':2,
-        'piece 6':2,
-        'piece 7':2,
-        'piece 8':2
-    }
+    poly_jakobs = [
+        {
+            "dataset":poly1a,
+            "outputName":"poly1a",
+            "quantity":1,
+            "width":40,
+            "length":18           
+        },
+        {
+            "dataset":poly1b,
+            "outputName":"poly1b",
+            "quantity":1,
+            "width":40,
+            "length":21           
+        },
+        {
+            "dataset":poly1c,
+            "outputName":"poly1c",
+            "quantity":1,
+            "width":40,
+            "length":14           
+        },
+        {
+            "dataset":poly1d,
+            "outputName":"poly1d",
+            "quantity":1,
+            "width":40,
+            "length":14           
+        },
+        {
+            "dataset":poly1e,
+            "outputName":"poly1e",
+            "quantity":1,
+            "width":40,
+            "length":13           
+        },
+        {
+            "dataset":jakobs1,
+            "outputName":"jakobs1",
+            "quantity":1,
+            "width":40,
+            "length":13           
+        },
+    ]
 
-    artif2_4 = {
-        'piece 1':2,
-        'piece 2':2,
-        'piece 3':2,
-        'piece 4':4,
-        'piece 5':4,
-        'piece 6':4,
-        'piece 7':4,
-        'piece 8':4
-    }
-
-    artif3_6 = {
-        'piece 1':3,
-        'piece 2':3,
-        'piece 3':3,
-        'piece 4':6,
-        'piece 5':6,
-        'piece 6':6,
-        'piece 7':6,
-        'piece 8':6
-    }
-
-    artif4_8 = {
-        'piece 1':4,
-        'piece 2':4,
-        'piece 3':4,
-        'piece 4':8,
-        'piece 5':8,
-        'piece 6':8,
-        'piece 7':8,
-        'piece 8':8
-    }
-
-    artif5_10 = {
-        'piece 1':5,
-        'piece 2':5,
-        'piece 3':5,
-        'piece 4':10,
-        'piece 5':10,
-        'piece 6':10,
-        'piece 7':10,
-        'piece 8':10
-    }
-
-    artif6_12 = {
-        'piece 1':6,
-        'piece 2':6,
-        'piece 3':6,
-        'piece 4':12,
-        'piece 5':12,
-        'piece 6':12,
-        'piece 7':12,
-        'piece 8':12
-    }
-
-    artif7_14 = {
-        'piece 1':7,
-        'piece 2':7,
-        'piece 3':7,
-        'piece 4':14,
-        'piece 5':14,
-        'piece 6':14,
-        'piece 7':14,
-        'piece 8':14
-    }
-
-    artif8_15 = {
-        'piece 1':8,
-        'piece 2':8,
-        'piece 3':8,
-        'piece 4':15,
-        'piece 5':15,
-        'piece 6':15,
-        'piece 7':15,
-        'piece 8':15
-    }
-
-
-
-
-    #Dataset selected for graph generation
-    selelected = artif
-    filepath = dir_path+selelected
-
-    #Name of output
-    name = Path(filepath).stem+''
-    #Output directory
-    outputdir = dir_path+'/resultsGPU2/'+name
-    
-    #Board Size
-    width = 27 #y axis
-    lenght = 53 #x axis
-    #GPU Settings:
-    
-    PieceQuantity = artif8_15 #None if use quantity from dataset
-    #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
-    #    'PIECE 1':9,
-    #    'PIECE 2':7,
-    #    'PIECE 3':9,
-    #    'PIECE 4':9
-    #}
-
-    #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
-    #    'PIECE 1':9,
-    #    'PIECE 2':7,
-    #    'PIECE 3':9,
-    #    'PIECE 4':9
-    #}
+    datasetblaz2 = [
+        {
+            "dataset":blaz,
+            "outputName":"blasz2",
+            "quantity":{
+                'PIECE 1':5,
+                'PIECE 2':5,
+                'PIECE 3':5,
+                'PIECE 4':5,
+                'PIECE 5':0,
+                'PIECE 6':0,
+                'PIECE 7':0
+            },
+            "width":15,
+            "length":27
+        },
+    ]
+    #datasetThree
+    #datasetshapes
+    #datasetblaz
+    #datasetRCO
+    #datasetArtif
+    #datasetshirts
+    #datasetdagli
+    #datasetfu
     
 
+    for set in datasetblaz2:
+        #Dataset selected for graph generation
+        #selelected = shapes
+        selelected = set['dataset']
+        filepath = dir_path+selelected
 
-    freq = 1 #gx=gy=1
-    with open(filepath) as file:
-        inputdataset = json.load(file)
+        #Name of output
+        name = set['outputName']
+        #Output directory
+        outputdir = dir_path+'/resultsGPU3/'+name
 
-    polygons = run_js_script_function('file://'+dir_path.replace('\\','/')+'/scriptpy.js', 'calcNFP_INFP', [inputdataset, lenght,width])
-    
-    #nfp-infit output struct:
-    #{
-    #   "name_polygon":{
-    #       "VERTICES":[list_of_vertices],
-    #       "QUANTITY":quantity,
-    #       "NUMBER OF VERTICES": number,
-    #       "innerfit":[polygon_innerfit],
-    #       "nfps":[{"POLYGON": "name_polygon","VERTICES":[list_of_vertices_nfp]}]}
-    #
-    #}
-    #NOTE: There is also a 'rect' polygon added at the end of the file as the board
-    
-    if not os.path.exists(outputdir):
-        os.mkdir(outputdir)
-    nfp_infp = json.dumps(polygons, indent=2)
-    with open(outputdir+'/nfp-infp '+name+'.json', 'w') as file:
-        file.write(nfp_infp)
-    
-    board = copy.deepcopy(polygons['rect'])
-    del polygons['rect']
+        #Board Size
+        #width = 40 #y axis
+        #length = 28 #x axis
 
-    num_polygon = len(polygons)
+        width = set['width']
+        length = set['length']
+        #GPU Settings:
 
+        PieceQuantity = set['quantity'] #None if use quantity from dataset
+        #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
+        #    'PIECE 1':9,
+        #    'PIECE 2':7,
+        #    'PIECE 3':9,
+        #    'PIECE 4':9
+        #}
 
-    total = 0
-    if PieceQuantity is not None:
-        if isinstance(PieceQuantity, dict):
-            for key, value in PieceQuantity.items():
-                polygons[key]['QUANTITY'] = PieceQuantity[key]
-        else:
-            for key, value in polygons.items():
-                polygons[key]['QUANTITY'] = PieceQuantity
-    
-    for key, value in polygons.items():
-        total += polygons[key]['QUANTITY']
+        #PieceQuantity = {  #Dict if we wants specify quantity of each piece (SHAPE9)
+        #    'PIECE 1':9,
+        #    'PIECE 2':7,
+        #    'PIECE 3':9,
+        #    'PIECE 4':9
+        #}
 
 
 
-    LayerPoly = []
-    LayerOfpoint = []
-    valIndex = 1
-    layer = 0
-    PolyIndex = 0
-    PolyIndexDict = {}
-    layer_poly_ids = {}
-    maxnfp = 0              #Error check
-    references = {}
-    print("generating each layer of points..")
-    
-    AccIndex = 0
-    for key, value in polygons.items():
-        Nfpsdict = {}
-        
-        poly = key
+        freq = 1 #gx=gy=1
+        with open(filepath) as file:
+            inputdataset = json.load(file)
 
-        PolyIndexDict[PolyIndex] = poly
-        
-        for nfpoly in polygons[poly]['nfps']:
-            Nfpsdict[nfpoly['POLYGON']] = nfpoly
-            del Nfpsdict[nfpoly['POLYGON']]['POLYGON']
-            if len(nfpoly['VERTICES']) > maxnfp:
-                maxnfp = len(nfpoly['VERTICES'])
-        polygons[poly]['nfpdict'] = Nfpsdict
-        MainPiece = polygons[poly]
-        innerfit = MainPiece["innerfit"]
-        Nfps = MainPiece["nfps"]
-        quantity = MainPiece.get("QUANTITY",1)
-        #print("polygon: ",poly, "Quantity:",quantity)
-        for i in range(quantity):
-            boardPoints = generatePoints(board,freq,valIndex)
-            valIndex += len(boardPoints)
-            innerpoint = []
-            dictBoardPolyinnerFit = dictpoly(innerfit)
-            #Filter for innerfit for polygon
-            for point in boardPoints:
-                res = geometryUtil.point_in_polygon(point,dictBoardPolyinnerFit)
-                if res != False:
-                    innerpoint.append([point['x'],point['y'],point['id']])
-            for i in range(0,len(innerpoint)):
-                innerpoint[i][2] = i+AccIndex
-                
-            AccIndex += len(innerpoint)
-            #innerpoint = np.array(innerpoint,dtype=np.float32)
-            #print("there is a",len(innerpoint)," of innerfit points! ")
-            LayerOfpoint.append({"POLYGON":poly,"InnerFitPoints":innerpoint,"Layer":layer})
-            LayerPoly.append((layer,poly))
-            layer_poly_ids[layer] = PolyIndex
-            layer += 1
-        #print(polygons[poly]['VERTICES'])
-        references[PolyIndex] = (polygons[poly]['VERTICES'][0]['x'],polygons[poly]['VERTICES'][0]['y'])
-        PolyIndex += 1
+        polygons = run_js_script_function('file://'+dir_path.replace('\\','/')+'/scriptpy.js', 'calcNFP_INFP', [inputdataset, length,width])
 
-    #Check if max exceeds the the constant NFP
-    if maxnfp > MAX_NFP_VERTICES:
-        raise Exception(f"SIZE ERROR: nfp size ({maxnfp}) exceeds max size of the MAX_NFP_VERTICES({MAX_NFP_VERTICES})")
+        #nfp-infit output struct:
+        #{
+        #   "name_polygon":{
+        #       "VERTICES":[list_of_vertices],
+        #       "QUANTITY":quantity,
+        #       "NUMBER OF VERTICES": number,
+        #       "innerfit":[polygon_innerfit],
+        #       "nfps":[{"POLYGON": "name_polygon","VERTICES":[list_of_vertices_nfp]}]}
+        #
+        #}
+        #NOTE: There is also a 'rect' polygon added at the end of the file as the board
 
- 
-    print("generating the graph..\n")
-    ntXgraphAll = nk.Graph()
-    ntXgraphInterLayer = nk.Graph()
-    ntXgraphComplete = nk.Graph()
-    EdgeArray = []
+        if not os.path.exists(outputdir):
+            os.mkdir(outputdir)
+        nfp_infp = json.dumps(polygons, indent=2)
+        with open(outputdir+'/nfp-infp '+name+'.json', 'w') as file:
+            file.write(nfp_infp)
 
-    print("Generating complete graph..")
-    for mainLayer in LayerOfpoint:
-        #make complete graph
-        #print("generating graph of Layer: ",mainLayer["Layer"])
-        newArr = makeFullGraph(mainLayer["InnerFitPoints"])
-        EdgeArray.append(newArr)
+        board = copy.deepcopy(polygons['rect'])
+        del polygons['rect']
 
-    EdgeArray = np.vstack(EdgeArray)
-    NumberOfNodes = np.uint64(np.max(EdgeArray) + 1)
-    Clique_edges = EdgeArray.shape[0]
-    #print("adding results to the graph..")
-    #ntXgraphAll.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
-    #ntXgraphComplete.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
-    #print("adding complete!")
+        num_polygon = len(polygons)
 
-    num_groups = len(LayerOfpoint)
-    # Create pairs to process (excluding self-pairs)
-    all_pairs = [(i,j) for i in range(num_groups) 
-                 for j in range(num_groups) if i != j]
-    polygonPairs = [(i,j) for i in range(num_polygon)
-                 for j in range(num_polygon)]
-    print("number of pairs: ",len(all_pairs))
-    nfpPair = {}
-    nfpPairSize = {}
-    for i,j in polygonPairs:
-        polyA = PolyIndexDict[i]
-        polyB = PolyIndexDict[j]
-        listpoint = []
-        for v in polygons[polyA]['nfpdict'][polyB]['VERTICES']:
-            listpoint.append([v['x'],v['y']])
 
-        nfpPair[(i,j)] = np.array(listpoint,dtype=np.float32)
-        nfpPairSize[(i,j)] = nfpPair[(i,j)].shape[0]
-    print("Generating NFP-graph..")
-    start = time.time()
-    results = process_group_pairs(all_pairs,LayerOfpoint,layer_poly_ids,nfpPair,nfpPairSize,references)
-    nfp_gpu = time.time() - start
-    print("NFP-graph generation complete with:", nfp_gpu, " seconds")
-    print("filtering the duplicates..")
-    progress_dict = {}
-    total_results = []
-    start = time.time()
-    for k in all_pairs:
-        if (k[1],k[0]) in progress_dict.keys() or (k[0],k[1]) in progress_dict.keys():
-            continue
-        result_pair = np.vstack([results[(k[0],k[1])],results[(k[1],k[0])]])
-        del results[(k[0],k[1])]
-        del results[(k[1],k[0])]
-        total_results.append(remove_symmetric_duplicates_gpu(result_pair))
-        progress_dict[(k[1],k[0])] = 1
-        progress_dict[(k[0],k[1])] = 1
-    filter_time = time.time() - start
-    print("filer time: ",filter_time)
-    del results
-    del progress_dict
-    total_results = np.concatenate(total_results)
-    print("result shape: ",total_results.shape)
-    nfp_edges = total_results.shape[0]
+        total_polygon = 0
+        total_area = 0
+        if PieceQuantity is not None:
+            if isinstance(PieceQuantity, dict):
+                for key, value in PieceQuantity.items():
+                    polygons[key]['QUANTITY'] = PieceQuantity[key]
+            else:
+                for key, value in polygons.items():
+                    polygons[key]['QUANTITY'] = PieceQuantity
 
-    total_edges = np.uint64(nfp_edges+Clique_edges)
-    density = total_edges / (NumberOfNodes*(NumberOfNodes-1) / 2)
-    print("graph node:",NumberOfNodes,"edges: ",total_edges,"cliques edges: ",Clique_edges,"NFP-edges: ",nfp_edges,"density:",density)
-    #exit()
-    #print("adding into graph..")
-    #ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
-    #ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
-#
-    #print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+        for key, value in polygons.items():
+            total_area += polygons[key]['QUANTITY']*polygon_area(polygons[key]['VERTICES'])
+            total_polygon += polygons[key]['QUANTITY']
 
-    print("writting into file ...")
 
-    print("saving into csv")
-    final_results = np.concatenate([total_results,EdgeArray])
-    start = time.time()
-    pd.DataFrame(final_results).to_csv(outputdir+'/graph '+name+'.csv', index=False, header=False)
-    filwrite_time = time.time() - start
-    print("writting file time: ",filwrite_time)
-    
-    with open(outputdir+'/pointCoordinate '+name+'.txt', 'w') as file:
-        file.write('##format: (Layer,x,y,id)' + '\n')
-        for layer in LayerOfpoint:
-            for points in layer['InnerFitPoints']:
-                file.write(str(layer['Layer'])+' '+str(points[0])+' '+str(points[1])+' '+str(points[2]) + '\n')
 
-    with open(outputdir+'/LayerPoly'+name+'.txt', 'w') as file:
-        file.write('##format:  Layer polygon ' + '\n')
-        for layer in LayerPoly:
-            file.write(str(layer[0])+'\t'+str(layer[1])+'\n')
-    
-    #start = time.time()
-    #with open(outputdir+'/graph '+name+'.csv', 'w', newline='') as csvfile:
-    #    spamwriter = csv.writer(csvfile, delimiter='\t',
-    #                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    #    for edge in list(ntXgraphAll.iterEdges()):
-    #        spamwriter.writerow([edge[0],edge[1]])
-    #sequential_writein = time.time() - start
-    #print("sequential write in time: ",sequential_writein)
-    #print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+        LayerPoly = []
+        LayerOfpoint = []
+        valIndex = 1
+        layer = 0
+        PolyIndex = 0
+        PolyIndexDict = {}
+        layer_poly_ids = {}
+        maxnfp = 0              #Error check
+        references = {}
+        print("generating each layer of points..")
 
-    with open(outputdir+'/metadata'+name+'.csv', 'w', newline='') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter='\t',
-                                quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(["Name :",str(name)])
-        spamwriter.writerow(["Total Pieces :",total])
-        spamwriter.writerow(["Type of Pieces :",len(polygons)])
-        spamwriter.writerow(["Board lenght x lenght:", str(width)+' '+ str(lenght)])
-        spamwriter.writerow(["Number of Nodes:",ntXgraphAll.numberOfNodes()])
-        spamwriter.writerow(["Number of Edges:",ntXgraphAll.numberOfEdges()])
-        spamwriter.writerow(["Number of Clique Edges:",ntXgraphComplete.numberOfEdges()])
-        spamwriter.writerow(["Intra Layer Edges:",ntXgraphInterLayer.numberOfEdges()])
+        AccIndex = 0
+        for key, value in polygons.items():
+            Nfpsdict = {}
+
+            poly = key
+
+            PolyIndexDict[PolyIndex] = poly
+
+            for nfpoly in polygons[poly]['nfps']:
+                Nfpsdict[nfpoly['POLYGON']] = nfpoly
+                del Nfpsdict[nfpoly['POLYGON']]['POLYGON']
+                if len(nfpoly['VERTICES']) > maxnfp:
+                    maxnfp = len(nfpoly['VERTICES'])
+            polygons[poly]['nfpdict'] = Nfpsdict
+            MainPiece = polygons[poly]
+            innerfit = MainPiece["innerfit"]
+            Nfps = MainPiece["nfps"]
+            quantity = MainPiece.get("QUANTITY",1)
+            #print("polygon: ",poly, "Quantity:",quantity)
+            for i in range(quantity):
+                boardPoints = generatePoints(board,freq,valIndex)
+                valIndex += len(boardPoints)
+                innerpoint = []
+                dictBoardPolyinnerFit = dictpoly(innerfit)
+                #Filter for innerfit for polygon
+                for point in boardPoints:
+                    res = geometryUtil.point_in_polygon(point,dictBoardPolyinnerFit)
+                    if res != False:
+                        innerpoint.append([point['x'],point['y'],point['id']])
+                for i in range(0,len(innerpoint)):
+                    innerpoint[i][2] = i+AccIndex
+
+                AccIndex += len(innerpoint)
+                #innerpoint = np.array(innerpoint,dtype=np.float32)
+                #print("there is a",len(innerpoint)," of innerfit points! ")
+                LayerOfpoint.append({"POLYGON":poly,"InnerFitPoints":innerpoint,"Layer":layer})
+                LayerPoly.append((layer,poly))
+                layer_poly_ids[layer] = PolyIndex
+                layer += 1
+            #print(polygons[poly]['VERTICES'])
+            references[PolyIndex] = (polygons[poly]['VERTICES'][0]['x'],polygons[poly]['VERTICES'][0]['y'])
+            PolyIndex += 1
+
+        #Check if max exceeds the the constant NFP
+        if maxnfp > MAX_NFP_VERTICES:
+            raise Exception(f"SIZE ERROR: nfp size ({maxnfp}) exceeds max size of the MAX_NFP_VERTICES({MAX_NFP_VERTICES})")
 
     
-    #import code
-    #code.interact(local=locals())
+        print("generating the graph..\n")
+        ntXgraphAll = nk.Graph()
+        ntXgraphInterLayer = nk.Graph()
+        ntXgraphComplete = nk.Graph()
+        EdgeArray = []
+        EdgeIndex = []
+        print("Generating complete graph..")
+        for mainLayer in LayerOfpoint:
+            #make complete graph
+            #print("generating graph of Layer: ",mainLayer["Layer"])
+
+            points_values = np.array([point[2] for point in mainLayer["InnerFitPoints"]], dtype=int)
+            EdgeIndex.append([points_values.min(),points_values.max()])
+            newArr = makeFullGraph(mainLayer["InnerFitPoints"])
+            EdgeArray.append(newArr)
+
+        EdgeArray = np.vstack(EdgeArray)
+        NumberOfNodes = np.uint64(np.max(EdgeArray) + 1)
+        Clique_edges = EdgeArray.shape[0]
+        #print("adding results to the graph..")
+        #ntXgraphAll.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
+
+        #ntXgraphComplete.addEdges((np.array(EdgeArray[:,0]),np.array(EdgeArray[:,1])), addMissing=True)
+        #print("adding complete!")
+
+        num_groups = len(LayerOfpoint)
+        # Create pairs to process (excluding self-pairs)
+        all_pairs = [(i,j) for i in range(num_groups) 
+                     for j in range(num_groups) if i != j]
+        polygonPairs = [(i,j) for i in range(num_polygon)
+                     for j in range(num_polygon)]
+        print("number of pairs: ",len(all_pairs))
+        nfpPair = {}
+        nfpPairSize = {}
+        for i,j in polygonPairs:
+            polyA = PolyIndexDict[i]
+            polyB = PolyIndexDict[j]
+            listpoint = []
+            for v in polygons[polyA]['nfpdict'][polyB]['VERTICES']:
+                listpoint.append([v['x'],v['y']])
+
+            nfpPair[(i,j)] = np.array(listpoint,dtype=np.float32)
+            nfpPairSize[(i,j)] = nfpPair[(i,j)].shape[0]
+        print("Generating NFP-graph..")
+        start = time.time()
+        results = process_group_pairs(all_pairs,LayerOfpoint,layer_poly_ids,nfpPair,nfpPairSize,references)
+        nfp_gpu = time.time() - start
+        print("NFP-graph generation complete with:", nfp_gpu, " seconds")
+        print("filtering the duplicates..")
+        progress_dict = {}
+        total_results = []
+        start = time.time()
+        for k in all_pairs:
+            if (k[1],k[0]) in progress_dict.keys() or (k[0],k[1]) in progress_dict.keys():
+                continue
+            result_pair = np.vstack([results[(k[0],k[1])],results[(k[1],k[0])]])
+            del results[(k[0],k[1])]
+            del results[(k[1],k[0])]
+            total_results.append(remove_symmetric_duplicates_gpu(result_pair))
+            progress_dict[(k[1],k[0])] = 1
+            progress_dict[(k[0],k[1])] = 1
+        filter_time = time.time() - start
+        print("filer time: ",filter_time)
+        del results
+        del progress_dict
+        total_results = np.concatenate(total_results)
+        print("result shape: ",total_results.shape)
+        nfp_edges = total_results.shape[0]
+
+        total_edges = np.uint64(nfp_edges+Clique_edges)
+        density = total_edges / (NumberOfNodes*(NumberOfNodes-1) / 2)
+        print("graph node:",NumberOfNodes,"edges: ",total_edges,"cliques edges: ",Clique_edges,"NFP-edges: ",nfp_edges,"density:",density)
+        #exit()
+        #print("adding into graph..")
+        ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
+        #ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
+#   
+        #print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+
+        print("writting into file ...")
+
+        print("saving into csv")
+        #final_results = np.concatenate([total_results,EdgeArray])
+        final_results= total_results
+
+        start = time.time()
+        pd.DataFrame(final_results).to_csv(outputdir+'/graph '+name+'.csv', index=False, header=False,sep='\t')
+        filwrite_time = time.time() - start
+        print("writting file time: ",filwrite_time)
+
+        with open(outputdir+'/pointCoordinate '+name+'.txt', 'w') as file:
+            file.write('##format: (Layer,x,y,id)' + '\n')
+            for layer in LayerOfpoint:
+                for points in layer['InnerFitPoints']:
+                    file.write(str(layer['Layer'])+' '+str(points[0])+' '+str(points[1])+' '+str(points[2]) + '\n')
+
+        with open(outputdir+'/LayerPoly'+name+'.txt', 'w') as file:
+            file.write('##format:  Layer polygon ' + '\n')
+            for layer in LayerPoly:
+                file.write(str(layer[0])+'\t'+str(layer[1])+'\n')
+
+        pd.DataFrame(EdgeIndex,columns=['start_index','end_index']).to_csv(outputdir+'/cliques'+name+'.csv', index=False, header=True,sep='\t')
+
+
+        start = time.time()
+        with open(outputdir+'/graph '+name+'.csv', 'w', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter='\t',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            for edge in list(ntXgraphAll.iterEdges()):
+                spamwriter.writerow([edge[0],edge[1]])
+        sequential_writein = time.time() - start
+        print("sequential write in time: ",sequential_writein)
+        print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+        with open(outputdir+'/metadata'+name+'.csv', 'w', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter='\t',
+                                    quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow(["Name :",str(name)])
+            spamwriter.writerow(["Total Pieces :",total_polygon])
+            spamwriter.writerow(["Type of Pieces :",len(polygons)])
+            spamwriter.writerow(["Board width",str(width)])
+            spamwriter.writerow(["Board length:",str(length)])
+            spamwriter.writerow(["Number of Nodes:",NumberOfNodes])
+            spamwriter.writerow(["Number of Edges:",total_edges])
+            spamwriter.writerow(["Number of Clique Edges:",Clique_edges])
+            spamwriter.writerow(["Intra Layer Edges:",nfp_edges])
+            spamwriter.writerow(["Total Polygon Area:",total_area])
+
+
+        #import code
+        #code.interact(local=locals())
