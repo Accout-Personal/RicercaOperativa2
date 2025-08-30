@@ -1239,22 +1239,40 @@ if __name__ == "__main__":
         print("filtering the duplicates..")
         progress_dict = {}
         total_results = []
+        result_pair = []
         start = time.time()
         for k in all_pairs:
             if (k[1],k[0]) in progress_dict.keys() or (k[0],k[1]) in progress_dict.keys():
                 continue
+
+            #if len(result_pair) == 0:
+            #    result_pair = np.vstack([results[(k[0],k[1])],results[(k[1],k[0])]])
+            #else:
+            #    result_pair = np.vstack([result_pair,results[(k[0],k[1])],results[(k[1],k[0])]])
             result_pair = np.vstack([results[(k[0],k[1])],results[(k[1],k[0])]])
+            #liberate RAM
             del results[(k[0],k[1])]
             del results[(k[1],k[0])]
+
             total_results.append(remove_symmetric_duplicates_gpu(result_pair))
             progress_dict[(k[1],k[0])] = 1
             progress_dict[(k[0],k[1])] = 1
+        #sorted_pair = result_pair[np.lexsort((result_pair[:, 1], result_pair[:, 0]))]
+        #np.savetxt('sorted_pair.txt', sorted_pair, fmt='%d', delimiter='\t')
+        #print("sorted pair output complete.")
+
         filter_time = time.time() - start
         print("filer time: ",filter_time)
         del results
         del progress_dict
         total_results = np.concatenate(total_results)
         print("result shape: ",total_results.shape)
+
+        sorted_pair = total_results[np.lexsort((total_results[:, 1], total_results[:, 0]))]
+        np.savetxt('sorted_pair.txt', sorted_pair, fmt='%d', delimiter='\t')
+        print("sorted pair output complete.")
+        #exit()
+
         nfp_edges = total_results.shape[0]
 
         total_edges = np.uint64(nfp_edges+Clique_edges)
@@ -1262,7 +1280,7 @@ if __name__ == "__main__":
         print("graph node:",NumberOfNodes,"edges: ",total_edges,"cliques edges: ",Clique_edges,"NFP-edges: ",nfp_edges,"density:",density)
         #exit()
         #print("adding into graph..")
-        ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
+        #ntXgraphAll.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
         #ntXgraphInterLayer.addEdges((np.array(total_results[:,0]),np.array(total_results[:,1])), addMissing=True)
 #   
         #print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
@@ -1292,15 +1310,16 @@ if __name__ == "__main__":
         pd.DataFrame(EdgeIndex,columns=['start_index','end_index']).to_csv(outputdir+'/cliques'+name+'.csv', index=False, header=True,sep='\t')
 
 
-        start = time.time()
-        with open(outputdir+'/graph '+name+'.csv', 'w', newline='') as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter='\t',
-                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            for edge in list(ntXgraphAll.iterEdges()):
-                spamwriter.writerow([edge[0],edge[1]])
-        sequential_writein = time.time() - start
-        print("sequential write in time: ",sequential_writein)
+        #start = time.time()
+        #with open(outputdir+'/graph '+name+'.csv', 'w', newline='') as csvfile:
+        #    spamwriter = csv.writer(csvfile, delimiter='\t',
+        #                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        #    for edge in list(ntXgraphAll.iterEdges()):
+        #        spamwriter.writerow([edge[0],edge[1]])
+        #sequential_writein = time.time() - start
+        #print("sequential write in time: ",sequential_writein)
         print("nXgraphAll node:",ntXgraphAll.numberOfNodes(),"edges: ",ntXgraphAll.numberOfEdges(),"cliques edges: ",ntXgraphComplete.numberOfEdges(),"NFP-edges: ",ntXgraphInterLayer.numberOfEdges(),"density:",nk.graphtools.density(ntXgraphAll))
+        
         with open(outputdir+'/metadata'+name+'.csv', 'w', newline='') as csvfile:
             spamwriter = csv.writer(csvfile, delimiter='\t',
                                     quoting=csv.QUOTE_MINIMAL)
